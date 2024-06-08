@@ -1,31 +1,48 @@
-// src/redux/contacts/operations.js
+import axios from 'axios';
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import {
-  fetchContactsApi,
-  addContactApi,
-  deleteContactApi,
-} from '../../components/api/contacts';
 
 export const fetchContacts = createAsyncThunk(
-  'contacts/fetchContacts',
-  async () => {
-    const response = await fetchContactsApi();
-    return response.data;
+  'contacts/fetchAll',
+  async (_, thunkAPI) => {
+    try {
+      const response = await axios.get('/contacts');
+      return response.data;
+    } catch (e) {
+      return thunkAPI.rejectWithValue(e.message);
+    }
   }
 );
 
 export const addContact = createAsyncThunk(
   'contacts/addContact',
-  async contact => {
-    const response = await addContactApi(contact);
-    return response.data;
+  async ({ name, number }, thunkAPI) => {
+    const state = thunkAPI.getState();
+    const existingContact = state.contacts.contacts.find(
+      contact => contact.name.toLowerCase() === name.trim().toLowerCase()
+    );
+    if (existingContact) {
+      return thunkAPI.rejectWithValue(`${name} is already in contacts!`);
+    }
+    try {
+      const response = await axios.post('/contacts', {
+        name,
+        number,
+      });
+      return response.data;
+    } catch (e) {
+      return thunkAPI.rejectWithValue(e.message);
+    }
   }
 );
 
 export const deleteContact = createAsyncThunk(
   'contacts/deleteContact',
-  async contactId => {
-    await deleteContactApi(contactId);
-    return contactId;
+  async (contactId, thunkAPI) => {
+    try {
+      const response = await axios.delete(`/contacts/${contactId}`);
+      return response.data;
+    } catch (e) {
+      return thunkAPI.rejectWithValue(e.message);
+    }
   }
 );
